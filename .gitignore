@@ -5,7 +5,6 @@
 *.dylib
 *.test
 *.out
-*.dat
 *.iws
 *.iml
 *.ipr
@@ -20,7 +19,7 @@ publish/
 /antizapret-xray.exe
 
 # Generated dat file.
-antizapret.dat
+#antizapret.dat
 
 # Exported plaintext lists.
-/*.txt
+#/*.txt
