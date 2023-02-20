@@ -15,3 +15,12 @@ Godeps/
 z-i/
 publish/
 .idea
+
+/antizapret-xray
+/antizapret-xray.exe
+
+# Generated dat file.
+antizapret.dat
+
+# Exported plaintext lists.
+/*.txt

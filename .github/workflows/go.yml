@@ -1,0 +1,77 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: go.mod
+
+    - name: Set variables
+      run: |
+        echo "TAG_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+        echo "RELEASE_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Get dump.csv
+      run: |
+        mkdir -p ./z-i
+        curl -fL https://github.com/zapret-info/z-i/raw/master/dump.csv -o ./z-i/dump.csv
+
+    - name: Build antizapret-xray module
+      run: go build -v ./...
+
+    - name: Run antizapret-xray module
+      run: ./antizapret-xray -geosite-filename antizapret.dat -input ./z-i/dump.csv -list-name ZAPRETINFO -output-dir ./
+
+    - name: Generate antizapret.dat sha256 hash
+      run: |
+        sha256sum antizapret.dat > antizapret.dat.sha256sum
+
+    - name: Generate Zip
+      run: |
+        zip -9 antizapret.dat.zip antizapret.dat
+        sha256sum antizapret.dat.zip > antizapret.dat.zip.sha256sum
+
+    - name: Generate XZ
+      run: |
+        xz -z -9 -k antizapret.dat
+        sha256sum antizapret.dat.xz > antizapret.dat.xz.sha256sum
+
+    - name: Git push assets to "release" branch
+      run: |
+        git init
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "18482039+github-actions[bot]@users.noreply.github.com"
+        git checkout -b release
+        git add *.txt *.sha256sum antizapret.dat antizapret.dat.zip antizapret.dat.xz
+        git commit -m "${{ env.RELEASE_NAME }}"
+        git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+        git push -f -u origin release
+
+    - name: Release and upload assets
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ${{ env.RELEASE_NAME }}
+        tag_name: ${{ env.TAG_NAME }}
+        draft: false
+        prerelease: false
+        files: |
+          ./antizapret.dat
+          ./antizapret.dat.*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
